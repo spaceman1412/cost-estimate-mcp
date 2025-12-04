@@ -1,11 +1,11 @@
 {
-  "name": "cost-awareness-mcp",
+  "name": "cost-estimate-mcp",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "type": "module",
   "bin": {
-    "cost-awareness-mcp": "./build/index.js"
+    "cost-estimate-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
