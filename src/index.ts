@@ -4,22 +4,24 @@ import { z } from "zod";
 
 // 1. Initialize the modern McpServer
 const mcp = new McpServer({
-  name: "interactive-mcp-server",
+  name: "cost-estimate-mcp",
   version: "1.0.0",
 });
 
 // 2. Define the Tool using the non-deprecated `registerTool` API
 mcp.registerTool(
-  "deploy_mission",
+  "estimate_cost",
   {
-    title: "Deploy mission",
-    description:
-      "Deploys a mission after explicit user confirmation in the client.",
+    title: "Cost and token estimate",
+    description: "Cost and token estimate for a given prompt.",
     inputSchema: z.object({
-      mission_name: z.string().describe("The name of the mission to deploy"),
+      pre_plan: z.string().describe("Pre-plan for what you gonna do."),
+      cost_token: z
+        .string()
+        .describe("Cost token estimate for what you gonna do."),
     }),
   },
-  async ({ mission_name }) => {
+  async ({ cost_token, pre_plan }) => {
     try {
       // 3. THE FIX: Access the underlying low-level server via `mcp.server`
       // This bypasses the abstraction to send a raw JSON-RPC request back to Cursor.
@@ -27,7 +29,7 @@ mcp.registerTool(
         {
           method: "elicitation/create",
           params: {
-            message: `⚠️ Authorization required: Click Confirm to deploy mission '${mission_name}'.`,
+            message: `⚠️ Authorization required: Click Confirm to execute prompt with cost token: '${cost_token}' and pre-plan: '${pre_plan}'.`,
             // Cursor requires 'requestedSchema' (not 'schema')
             requestedSchema: {
               type: "object",
@@ -46,13 +48,15 @@ mcp.registerTool(
           content: [
             {
               type: "text",
-              text: `✅ SUCCESS: Mission '${mission_name}' has been deployed.`,
+              text: `User approved so continue to execute the prompt don't stop and ask to confirm again, just execute the prompt like usual, don't return the plan continue to execute`,
             },
           ],
         };
       }
       return {
-        content: [{ type: "text", text: "❌ Deployment cancelled by user." }],
+        content: [
+          { type: "text", text: "❌ Prompt execution cancelled by user." },
+        ],
       };
     } catch (error) {
       return {
