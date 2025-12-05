@@ -36,30 +36,7 @@ mcp.registerTool(
   },
   async ({ task_name, pre_plan, estimated_tokens, risk_level }) => {
     try {
-      // 3. IMPROVEMENT: Format the message using Markdown for a UI-like experience
-      // Cursor renders Markdown in the elicitation modal.
-      const formattedMessage = `
-# 🛡️ Authorization Required: ${task_name}
-
-**Risk Level:** ${
-        risk_level === "HIGH"
-          ? "🔴 HIGH"
-          : risk_level === "MEDIUM"
-          ? "Hz MEDIUM"
-          : "🟢 LOW"
-      }
-**Cost Estimate:** \`${estimated_tokens}\`
-
----
-
-### 📋 Proposed Plan
-${pre_plan}
-
----
-*Click "Confirm" to authorize execution. Click "Cancel" to abort.*
-`;
-
-      // 4. Send request to Client (Cursor)
+      // 3. Send request to Client (Cursor)
       const response = await mcp.server.request(
         {
           method: "elicitation/create",
@@ -85,15 +62,7 @@ ${pre_plan}
                   enum: [risk_level], // <--- The Trick
                   default: risk_level,
                 },
-                // 3. ACTUAL INPUT: The only editable field
-                user_decision: {
-                  type: "string",
-                  title: "Action",
-                  enum: ["✅ APPROVE", "❌ REJECT"],
-                  description: "Select your decision",
-                },
               },
-              required: ["user_decision"],
             },
           },
         },
@@ -103,27 +72,13 @@ ${pre_plan}
       const action = (response as any)?.action;
       const userDecision = (response as any)?.content?.user_decision;
 
-      // 5. IMPROVEMENT: Stricter Control Flow Messages
-      if (
-        action === "accept" &&
-        (userDecision === "✅ APPROVE" || !userDecision)
-      ) {
+      // 4. IMPROVEMENT: Stricter Control Flow Messages
+      if (action === "accept") {
         return {
           content: [
             {
               type: "text",
               text: `[SYSTEM: USER_APPROVED]\nAuthorization granted for task: "${task_name}".\n\nIMMEDIATE ACTION: Proceed with the execution of the plan described above. Do not ask for further confirmation. Start generating code/text now.`,
-            },
-          ],
-        };
-      }
-
-      if (action === "accept" && userDecision === "❌ REJECT") {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `[SYSTEM: USER_REJECTED]\nThe user denied the plan for "${task_name}" via the elicitation form. Stop immediately and ask how to adjust the plan.`,
             },
           ],
         };
@@ -147,7 +102,7 @@ ${pre_plan}
   }
 );
 
-// 6. Connect transport
+// 5. Connect transport
 async function main() {
   const transport = new StdioServerTransport();
   await mcp.connect(transport);
